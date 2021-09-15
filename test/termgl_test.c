@@ -9,10 +9,10 @@
 #include <time.h>
 
 
-typedef struct  STLTriangle {
-	float normal[3]; //normal is unreliable so it is not used.
-	float vertices[3][3];
-	uint16_t attribute_bytes; //attribute bytes is unreliable so it is not used.
+typedef struct STLTriangle {
+	float    normal[3]; /// normal is unreliable so it is not used.
+	float    vertices[3][3];
+	uint16_t attribute_bytes; /// attribute bytes is unreliable so it is not used.
 } __attribute__ ((packed)) STLTriangle;
 
 void intermediate_shader(TGLTriangle *trig, void *data)
@@ -34,32 +34,51 @@ void intermediate_shader(TGLTriangle *trig, void *data)
 	trig->intensity[2] *= light_mul;
 }
 
-uint32_t stl_load(FILE *file, TGLTriangle **triangles)
+size_t stl_load(FILE *file, TGLTriangle **triangles)
 {
-	//ensure that file is binary instead of ascii
+	/// ensure that file is binary instead of ascii
 	char header[5];
 	assert(fread(header, sizeof(char), 5, file) == 5);
 	assert(strncmp("solid", header, 5));
-
+	
 	assert(fseek(file, sizeof(uint8_t[80]), SEEK_SET) == 0);
 	uint32_t num_triangles;
 	assert(fread(&num_triangles, sizeof(uint32_t), 1, file) == 1);
-	*triangles = malloc(sizeof(TGLTriangle) * num_triangles);
-
-	uint32_t i;
-	for (i = 0; i < num_triangles; i++) {
-		STLTriangle stl_triangle;
-		assert(fread(&stl_triangle, sizeof(STLTriangle), 1, file) == 1);
-		memcpy((*triangles)[i].vertices, stl_triangle.vertices, sizeof(float[3][3]));
-		memset((*triangles)[i].intensity, 255, 3);
+	*triangles = calloc(num_triangles, sizeof **triangles);
+	
+	for (size_t i = 0; i < num_triangles; i++) {
+		STLTriangle stl_triangle = {0};
+		assert(fread(&stl_triangle, sizeof stl_triangle, 1, file) == 1);
+		memcpy((*triangles)[i].vertices, stl_triangle.vertices, sizeof stl_triangle.vertices);
+		memset((*triangles)[i].intensity, 255, sizeof (*triangles)[i].intensity);
 	}
 	return num_triangles;
 }
 
-int main(void)
+static const char *restrict assets[] = {
+	"assets/utah_teapot.stl",
+	"assets/canyon2_2.stl",
+	"assets/e.stl",
+	"assets/G.stl",
+	"assets/L.stl",
+	"assets/m.stl",
+	"assets/r.stl",
+	"assets/T.stl"
+};
+
+int main(int argc, char *argv[restrict static 1])
 {
-	/// Select which scene to render. Either 0 or 1
-	unsigned render_obj = 0;
+	if( argc < 1 || argv[1]==NULL ) {
+		printf("TermGL Test :: './test_ <number between 0 and %zu>'\n", sizeof assets / sizeof assets[0]);
+		return -1;
+	}
+	
+	size_t render_obj = 0;
+	sscanf(argv[1], "%zu", &render_obj);
+	if( render_obj >= (sizeof assets / sizeof assets[0]) ) {
+		printf("TermGL Test :: number '%zu' is out of range!\n", render_obj);
+		return -1;
+	}
 	
 	/// Initialize TermGL
 	TGL *tgl = tgl_init(80, 50, &gradient_min);
@@ -73,9 +92,9 @@ int main(void)
 
 	/// Load triangles
 	TGLTriangle *trigs = NULL;
-	FILE *stl_file = fopen(render_obj ? "assets/canyon2_2.stl": "assets/utah_teapot.stl", "rb");
+	FILE *stl_file = fopen(assets[render_obj], "rb");
 	assert(stl_file);
-	uint32_t n_trigs = stl_load(stl_file, &trigs);
+	const size_t n_trigs = stl_load(stl_file, &trigs);
 	fclose(stl_file);
 	
 	/// Edit camera transformations
@@ -88,8 +107,8 @@ int main(void)
 	} else {
 		tgl3d_transform_translate(camera_t, 0.f, 3.f, 0.0f);
 	}
-
-	// Create transformation matrices for object
+	
+	/// Create transformation matrices for object
 	TGLTransform obj_t;
 	if (render_obj == 0) {
 		tgl3d_transform_scale(&obj_t, 0.1f, 0.1f, 0.1f);
@@ -101,7 +120,7 @@ int main(void)
 		tgl3d_transform_update(&obj_t);
 	}
 
-	float n = 0;
+	float n = 0.f;
 	while (1) {
 		//Edit transformation to move objects or camera
 		if (render_obj == 0) {
@@ -111,15 +130,14 @@ int main(void)
 			tgl3d_transform_rotate(camera_t, 1.57f, n, 0.f);
 			tgl3d_transform_update(camera_t);
 		}
-
-		unsigned i;
-		for (i = 0; i < n_trigs; i++) {
+		
+		for (size_t i = 0; i < n_trigs; i++) {
 			TGLTriangle temp;
-			// Apply object's transformation
+			/// Apply object's transformation
 			tgl3d_transform_apply(&obj_t, trigs[i].vertices, temp.vertices);
-			memcpy(temp.intensity, trigs[i].intensity, 3);
-
-			//Draw to framebuffer
+			memcpy(temp.intensity, trigs[i].intensity, sizeof temp.intensity);
+			
+			/// Draw to framebuffer
 			tgl3d_shader(tgl,
 				&temp,
 				render_obj ? (trigs[i].vertices[0][2] + 20) / 20: TGL_WHITE,
@@ -127,19 +145,19 @@ int main(void)
 				&temp,
 				&intermediate_shader);
 		}
-
-		// Print framebuffer to terminal
+		
+		/// Print framebuffer to terminal
 		tgl_flush(tgl);
-
-		// Clear framebuffer and depth buffer for next frame
+		
+		/// Clear framebuffer and depth buffer for next frame
 		tgl_clear(tgl, TGL_FRAME_BUFFER | TGL_Z_BUFFER | TGL_OUTPUT_BUFFER);
-
+		
 		n += 0.04f;
 		if (n >= 2.f * 3.14159f)
 			break;
 		
 		usleep(100000);
 	}
-	free(trigs);
-	tgl_delete(tgl);
+	free(trigs); trigs = NULL;
+	tgl_delete(tgl); tgl = NULL;
 }
