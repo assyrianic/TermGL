@@ -36,7 +36,7 @@ static inline void tgl_inv3(const float vec[3], float res[3]);
 static inline void tgl_cross(const float vec1[3], const float vec2[3], float res[3]);
 
 static inline void tgl_norm3(float vec[3]);
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 /// termgl3d.h - 3D helpers for TermGL.
@@ -121,7 +121,7 @@ static inline void tgl3d_transform_update(TGLTransform *transform);
  * Applies TGLTransform to array of 3 3D points, typically triangle vertices
  */
 static inline void tgl3d_transform_apply(TGLTransform *transform, TGLVec3 in[3], TGLVec3 out[3]);
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 /// termgl.h - TermGL general prototypes.
@@ -133,9 +133,16 @@ static inline void TGL_CLEAR_SCREEN(void) {
 	puts("\033[1;1H\033[2J");
 }
 
+
 #define TGL_TYPEOF          __typeof__
-#define TGL_MALLOC(bytes)   calloc(1, (bytes))
-#define TGL_FREE            free
+
+static inline void *TGL_MALLOC(size_t bytes) {
+	return calloc(1, bytes);
+}
+
+static inline void TGL_FREE(void *ptr) {
+	free(ptr);
+}
 
 
 typedef struct Gradient {
@@ -222,7 +229,7 @@ static inline void tgl_point(TGL *tgl, int x, int y, float z, uint8_t i, uint8_t
 static inline void tgl_line(TGL *tgl, int x0, int y0, float z0, uint8_t i0, int x1, int y1, float z1, uint8_t i1, uint8_t color);
 static inline void tgl_triangle(TGL *tgl, int x0, int y0, float z0, uint8_t i0, int x1, int y1, float z1, uint8_t i1, int x2, int y2, float z2, int i2, uint8_t color);
 static inline void tgl_triangle_fill(TGL *tgl, int x0, int y0, float z0, uint8_t i0, int x1, int y1, float z1, uint8_t i1, int x2, int y2, float z2, int i2, uint8_t color);
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 /// termgl_intern.h - utilities.
@@ -238,8 +245,8 @@ struct TGL {
 	size_t          frame_size, output_buffer_size;
 	size_t          width, height;
 	int             max_x, max_y;
-	bool            is_z_buffered;
 	uint8_t         settings;
+	bool            is_z_buffered : 1;
 };
 
 
@@ -260,7 +267,7 @@ static inline int XOR(int a, int b) {
 	return (bool)(a) != (bool)(b);
 }
 
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 /// vecmath implementation
@@ -290,45 +297,45 @@ static inline float tgl_dot43(const float vec1[4], const float vec2[3]) {
 }
 
 static inline void tgl_add3s(const float vec1[3], const float summand, float res[3]) {
-	res[0] = vec1[0] + summand;
-	res[1] = vec1[1] + summand;
-	res[2] = vec1[2] + summand;
+	for( size_t i=0; i < 3; i++ ) {
+		res[i] = vec1[i] + summand;
+	}
 }
 
 static inline void tgl_sub3s(const float vec1[3], const float subtrahend, float res[3]) {
-	res[0] = vec1[0] - subtrahend;
-	res[1] = vec1[1] - subtrahend;
-	res[2] = vec1[2] - subtrahend;
+	for( size_t i=0; i < 3; i++ ) {
+		res[i] = vec1[i] - subtrahend;
+	}
 }
 
 static inline void tgl_mul3s(const float vec[3], const float mul, float res[3]) {
-	res[0] = vec[0] * mul;
-	res[1] = vec[1] * mul;
-	res[2] = vec[2] * mul;
+	for( size_t i=0; i < 3; i++ ) {
+		res[i] = vec[i] * mul;
+	}
 }
 
 static inline void tgl_add3v(const float vec1[3], const float vec2[3], float res[3]) {
-	res[0] = vec1[0] + vec2[0];
-	res[1] = vec1[1] + vec2[1];
-	res[2] = vec1[2] + vec2[2];
+	for( size_t i=0; i < 3; i++ ) {
+		res[i] = vec1[i] + vec2[i];
+	}
 }
 
 static inline void tgl_sub3v(const float vec1[3], const float vec2[3], float res[3]) {
-	res[0] = vec1[0] - vec2[0];
-	res[1] = vec1[1] - vec2[1];
-	res[2] = vec1[2] - vec2[2];
+	for( size_t i=0; i < 3; i++ ) {
+		res[i] = vec1[i] - vec2[i];
+	}
 }
 
 static inline void tgl_mul3v(const float vec1[3], const float vec2[3], float res[3]) {
-	res[0] = vec1[0] * vec2[0];
-	res[1] = vec1[1] * vec2[1];
-	res[2] = vec1[2] * vec2[2];
+	for( size_t i=0; i < 3; i++ ) {
+		res[i] = vec1[i] * vec2[i];
+	}
 }
 
 static inline void tgl_inv3(const float vec[3], float res[3]) {
-	res[0] = 1.f / vec[0];
-	res[1] = 1.f / vec[1];
-	res[2] = 1.f / vec[2];
+	for( size_t i=0; i < 3; i++ ) {
+		res[i] = 1.f / vec[i];
+	}
 }
 
 static inline void tgl_cross(const float vec1[3], const float vec2[3], float res[3]) {
@@ -340,7 +347,7 @@ static inline void tgl_cross(const float vec1[3], const float vec2[3], float res
 static inline void tgl_norm3(float vec[3]) {
 	tgl_mul3s(vec, 1.f / tgl_mag3(vec), vec);
 }
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 /// TermGL 3D Implementation:
@@ -404,17 +411,17 @@ static const TGLVec3 clip_plane_normals[6] = {
 };
 
 static inline void tgl_mulmatvec(TGLMat mat, const TGLVec3 vec, TGLVec3 res) {
-#pragma GCC unroll 4
-	for( size_t i=0; i<3; i++ ) {
+#pragma GCC unroll 3
+	for( size_t i=0; i < 3; i++ ) {
 		res[i] = tgl_dot43(mat[i], vec);
 	}
 	
-	float w = tgl_dot43(mat[3], vec);
+	const float w = tgl_dot43(mat[3], vec);
 	if (w != 0.f) {
-		w = 1.f / w;
-		res[0] *= w;
-		res[1] *= w;
-		res[2] *= w;
+		#pragma GCC unroll 3
+		for( size_t i=0; i < 3; i++ ) {
+			res[i] *= 1.f / w;
+		}
 	}
 }
 
@@ -437,12 +444,11 @@ static inline float tgl_distance_point_plane(const TGLVec3 normal, TGLVec3 point
 }
 
 static inline void tgl3d_init(TGL *tgl) {
-	TGL3D *tgl3d = TGL_MALLOC(sizeof(TGL3D));
-	
+	TGL3D *tgl3d        = TGL_MALLOC(sizeof *tgl3d);
 	tgl3d->aspect_ratio = tgl->height / (float)(tgl->width);
-	tgl3d->half_width = tgl->width / 2.f;
-	tgl3d->half_height = tgl->height / 2.f;
-	tgl->tgl3d = tgl3d;
+	tgl3d->half_width   = tgl->width  / 2.f;
+	tgl3d->half_height  = tgl->height / 2.f;
+	tgl->tgl3d          = tgl3d;
 }
 
 static inline void tgl3d_camera(TGL *tgl, float fov, float near, float far)
@@ -477,15 +483,13 @@ static inline void tgl3d_transform_translate(TGLTransform *transform, float x, f
 	memcpy(transform->translate, translate, sizeof translate);
 }
 
-static inline void tgl3d_transform_update(TGLTransform *transform)
-{
+static inline void tgl3d_transform_update(TGLTransform *transform) {
 	TGLMat temp;
 	tgl_mulmat(transform->translate, transform->scale, temp);
 	tgl_mulmat(temp, transform->rotate, transform->result);
 }
 
-static inline void tgl3d_transform_apply(TGLTransform *transform, TGLVec3 in[3], TGLVec3 out[3])
-{
+static inline void tgl3d_transform_apply(TGLTransform *transform, TGLVec3 in[3], TGLVec3 out[3]) {
 	tgl_mulmatvec(transform->result, in[0], out[0]);
 	tgl_mulmatvec(transform->result, in[1], out[1]);
 	tgl_mulmatvec(transform->result, in[2], out[2]);
@@ -495,13 +499,13 @@ static inline float tgl_line_intersect_plane(const TGLVec3 normal, TGLVec3 start
 {
 	TGLVec3 line_vec;
 	tgl_sub3v(start, end, line_vec);
-	float distance = -(tgl_dot3(normal, start) + 1.f) / (tgl_dot3(normal, line_vec));
+	const float distance = -(tgl_dot3(normal, start) + 1.f) / (tgl_dot3(normal, line_vec));
 	tgl_mul3s(line_vec, distance, point);
 	tgl_add3v(point, start, point);
 	return distance;
 }
 
-static inline unsigned clip_triangle_plane(const TGLVec3 normal, TGLTriangle *in, TGLTriangle out[2])
+static inline size_t clip_triangle_plane(const TGLVec3 normal, TGLTriangle *in, TGLTriangle out[2])
 {
 	TGLVec3 di = {
 		tgl_distance_point_plane(normal, in->vertices[0]),
@@ -559,18 +563,20 @@ static inline void tgl3d_shader(TGL *tgl, TGLTriangle *in, uint8_t color, bool f
 	TGL3D *tgl3d = tgl->tgl3d;
 	
 	/// VERTEX SHADER
-	TGLTriangle t, out;
+	TGLTriangle t = {0};
 	
 	tgl_mulmatvec(tgl3d->transform.result, in->vertices[0], t.vertices[0]);
 	tgl_mulmatvec(tgl3d->transform.result, in->vertices[1], t.vertices[1]);
 	tgl_mulmatvec(tgl3d->transform.result, in->vertices[2], t.vertices[2]);
 	
 	/// TODO: clipping with the near plane should be done before projection, but this solution works well enough for now
-	if (t.vertices[0][2] < 1e-6f
-		|| t.vertices[1][2] < 1e-6f
-		|| t.vertices[2][2] < 1e-6f)
-		return;
+	for( size_t i=0; i < 3; i++ ) {
+		if( t.vertices[i][2] < 1e-6f ) {
+			return;
+		}
+	}
 	
+	TGLTriangle out = {0};
 	tgl_mulmatvec(tgl3d->projection, t.vertices[0], out.vertices[0]);
 	tgl_mulmatvec(tgl3d->projection, t.vertices[1], out.vertices[1]);
 	tgl_mulmatvec(tgl3d->projection, t.vertices[2], out.vertices[2]);
@@ -589,8 +595,8 @@ static inline void tgl3d_shader(TGL *tgl, TGLTriangle *in, uint8_t color, bool f
 	TGLTriangle trig_buffer[127];
 	memcpy(&trig_buffer[0], &out, sizeof out);
 	size_t buffer_offset = 0;
-	size_t n_cur_stage = 1;
-	for (size_t p = 0; p < 6; p++) {
+	size_t n_cur_stage   = 1;
+	for (size_t p = 0; p < (sizeof clip_plane_normals / sizeof clip_plane_normals[0]); p++) {
 		size_t n_next_stage = 0;
 		for (size_t i = 0; i < n_cur_stage; i++) {
 			n_next_stage += clip_triangle_plane(clip_plane_normals[p], &trig_buffer[i + buffer_offset], &trig_buffer[buffer_offset + n_cur_stage + n_next_stage]);
@@ -608,15 +614,15 @@ static inline void tgl3d_shader(TGL *tgl, TGLTriangle *in, uint8_t color, bool f
 		
 		/// FRAGMENT SHADER
 		( (fill)? tgl_triangle_fill : tgl_triangle )(tgl,
-			MAP_COORD(tgl3d->half_width, trig->vertices[0][0]),
+			MAP_COORD(tgl3d->half_width,  trig->vertices[0][0]),
 			MAP_COORD(tgl3d->half_height, trig->vertices[0][1]),
 			trig->vertices[0][2],
 			trig->intensity[0],
-			MAP_COORD(tgl3d->half_width, trig->vertices[1][0]),
+			MAP_COORD(tgl3d->half_width,  trig->vertices[1][0]),
 			MAP_COORD(tgl3d->half_height, trig->vertices[1][1]),
 			trig->vertices[1][2],
 			trig->intensity[1],
-			MAP_COORD(tgl3d->half_width, trig->vertices[2][0]),
+			MAP_COORD(tgl3d->half_width,  trig->vertices[2][0]),
 			MAP_COORD(tgl3d->half_height, trig->vertices[2][1]),
 			trig->vertices[2][2],
 			trig->intensity[2],
@@ -625,13 +631,14 @@ static inline void tgl3d_shader(TGL *tgl, TGLTriangle *in, uint8_t color, bool f
 }
 
 static inline void tgl3d_cull_face(TGL *tgl, uint8_t settings) {
-	tgl->tgl3d->settings = (tgl->tgl3d->settings & ~TGL_CULL_BIT) | (XOR(settings & TGL_CULL_FACE_BIT, settings & TGL_WINDING_BIT) ? TGL_CULL_BIT: 0);
+	TGL3D *tgl3d = tgl->tgl3d;
+	tgl3d->settings = (tgl3d->settings & ~TGL_CULL_BIT) | (XOR(settings & TGL_CULL_FACE_BIT, settings & TGL_WINDING_BIT) ? TGL_CULL_BIT: 0);
 }
 
 static inline TGLTransform *tgl3d_get_transform(TGL *tgl) {
 	return &tgl->tgl3d->transform;
 }
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 /// TermGL General Implementation:
@@ -665,13 +672,13 @@ static inline char INTENSITY_TO_CHAR(TGL *tgl, uint8_t intensity) {
 static const char grad_full_chars[] = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 static const Gradient gradient_full = {
 	.length = 70,
-	.grad = grad_full_chars,
+	.grad   = grad_full_chars,
 };
 
 static const char grad_min_chars[] = " .:-=+*#%@";
 static const Gradient gradient_min = {
 	.length = 10,
-	.grad = grad_min_chars,
+	.grad   = grad_min_chars,
 };
 
 static const char *color_codes[] = {
@@ -696,19 +703,19 @@ static const char *color_codes_bkg[] = {
 	[TGL_WHITE_BKG >> 4]  = "\033[47m",
 };
 
-static inline void itgl_clip(TGL *tgl, int *x, int *y)
-{
+static inline void itgl_clip(TGL *tgl, int *x, int *y) {
 	*x = MAX(MIN(tgl->max_x, *x), 0);
 	*y = MAX(MIN(tgl->max_y, *y), 0);
 }
 
 static inline void tgl_clear(TGL *tgl, const uint8_t buffers) {
 	if (buffers & TGL_FRAME_BUFFER) {
+		const Pixel pixel = {
+			.v_char = ' ',
+			.color  = 0x00
+		};
 		for (size_t i = 0; i < tgl->frame_size; i++) {
-			tgl->frame_buffer[i] = (Pixel) {
-				.v_char = ' ',
-				.color  = 0x00
-			};
+			tgl->frame_buffer[i] = pixel;
 		}
 	}
 	if (buffers & TGL_Z_BUFFER) {
@@ -728,12 +735,12 @@ static inline TGL *tgl_init(const size_t width, const size_t height, const Gradi
 		return tgl;
 	
 	*tgl = (TGL) {
-		.width = width,
-		.height = height,
-		.max_x = (int)(width) - 1,
-		.max_y = (int)(height) - 1,
+		.width      = width,
+		.height     = height,
+		.max_x      = (int)(width) - 1,
+		.max_y      = (int)(height) - 1,
 		.frame_size = width * height,
-		.gradient = gradient,
+		.gradient   = gradient,
 	};
 	
 	tgl->frame_buffer = TGL_MALLOC(tgl->frame_size * sizeof *tgl->frame_buffer);
@@ -752,7 +759,6 @@ static inline void tgl_flush(TGL *tgl)
 	uint8_t color = 0xFF;
 	Pixel *pixel = tgl->frame_buffer;
 	bool double_chars = tgl->settings & TGL_DOUBLE_CHARS;
-	
 	if (tgl->output_buffer_size) {
 		char *output_buffer_loc = tgl->output_buffer;
 		for (size_t row = 0; row < tgl->height; row++) {
@@ -1027,8 +1033,8 @@ LBL_NEXT2:
 		if (maxx < t1x)
 			maxx = t1x;
 		
-		const int vi0 = ((y - y0) * i1 + (y1 - y) * i0) / (y1 - y0);
-		const int vi1 = ((y - y0) * i2 + (y2 - y) * i0) / (y2 - y0);
+		const int vi0   = ((y - y0) * i1 + (y1 - y) * i0) / (y1 - y0);
+		const int vi1   = ((y - y0) * i2 + (y2 - y) * i0) / (y2 - y0);
 		const float vz0 = ((y - y0) * z1 + (y1 - y) * z0) / (y1 - y0);
 		const float vz1 = ((y - y0) * z1 + (y1 - y) * z0) / (y1 - y0);
 		if (t0x < t1x)
@@ -1117,10 +1123,10 @@ LBL_NEXT4:
 			maxx = t0x;
 		if (maxx < t1x)
 			maxx = t1x;
-
+		
 		if (y1 != y2) {
-			const int vi0 = ((y - y0) * i2 + (y2 - y) * i0) / (y2 - y0);
-			const int vi1 = ((y - y1) * i2 + (y2 - y) * i1) / (y2 - y1);
+			const int vi0   = ((y - y0) * i2 + (y2 - y) * i0) / (y2 - y0);
+			const int vi1   = ((y - y1) * i2 + (y2 - y) * i1) / (y2 - y1);
 			const float vz0 = ((y - y0) * z2 + (y2 - y) * z0) / (y2 - y0);
 			const float vz1 = ((y - y1) * z2 + (y2 - y) * z1) / (y2 - y1);
 			if (t1x < t0x)
@@ -1180,9 +1186,11 @@ static inline void tgl_delete(TGL *tgl) {
 static inline void tgl_cleanup(TGL **tgl_ref) {
 	if( *tgl_ref==NULL )
 		return;
-	tgl_delete(*tgl_ref); *tgl_ref = NULL;
+	
+	tgl_delete(*tgl_ref);
+	*tgl_ref = NULL;
 }
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 #ifdef __cplusplus
